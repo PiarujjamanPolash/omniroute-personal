@@ -22,8 +22,9 @@ Deploy OmniRoute as a **Node.js** app on [Hostinger](https://www.hostinger.com) 
    `v22.18.0` only prints `EBADENGINE` warnings; it is below `package.json` `engines` (`>=22.22.2 <23 || >=24.0.0 <27`). Prefer the newest 22 or 24 the panel offers.
 4. **Application root:** repository root (where `package.json` lives).
 5. **Build command:** `npm run build`
-6. **Start command:** `npm start`
-7. **Port:** leave the panel `PORT` (OmniRoute reads it). Bind address is `0.0.0.0` by default.
+6. **Output directory:** `.next` (the build also writes `.build/next` and aliases `.next` to it). If the panel still says `No output directory found after build`, set this to `.build/next`.
+7. **Start command:** `npm start` (do not use a bare `next start` unless the output directory is the one in `next.config.mjs`).
+8. **Port:** leave the panel `PORT` (OmniRoute reads it). Bind address is `0.0.0.0` by default.
 
 ## 2. Environment variables
 
@@ -67,7 +68,9 @@ Model:    auto
 
 ## Troubleshooting
 
-**`Turbopack is not supported on this platform` / `GLIBC_2.29' not found`** — The build must be this revision (webpack fallback in `scripts/build/build-next-isolated.mjs`). Set `OMNIROUTE_USE_TURBOPACK=0` in the panel and redeploy. Webpack uses WASM SWC and is slower; a 5–15 minute build is normal.
+**`ERROR: No output directory found after build`** — The Next.js compile already succeeded; Hostinger then looks for `.next` while OmniRoute's real output is `.build/next`. Set **Output directory** to `.build/next` (or `.next` after this revision's alias) and redeploy. Do not treat the GLIBC / Babel `EBADENGINE` lines as the failure.
+
+**`Turbopack is not supported on this platform` / `GLIBC_2.29' not found`** — The build must be this revision (webpack fallback in `scripts/build/build-next-isolated.mjs`). Set `OMNIROUTE_USE_TURBOPACK=0` in the panel and redeploy. Webpack uses WASM SWC and is slower; a 5–15 minute build is normal. The repeating `Attempted to load @next/swc-linux-x64-gnu` lines during a webpack build are warnings only.
 
 **`EBADENGINE` … `current: { node: 'v22.18.0'`** — Warnings only, but upgrade Node in the panel to **22.22+** or **24**.
 

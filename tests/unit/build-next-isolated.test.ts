@@ -8,6 +8,7 @@ import {
   getTransientBuildPaths,
   movePath,
   pruneStandaloneArtifacts,
+  publishDefaultNextOutputAlias,
   resolveNextBuildEnv,
   syncStandaloneExtraModules,
   syncStandaloneNativeAssets,
@@ -221,5 +222,30 @@ test("syncStandaloneExtraModules copies the complete wreq-js runtime", async () 
       "native module bytes"
     );
     assert.match(logs[0] ?? "", /wreq-js TLS runtime/);
+  });
+});
+
+test("publishDefaultNextOutputAlias links .next to .build/next for Hostinger", async () => {
+  await withTempDir(async (tempDir) => {
+    const actual = path.join(tempDir, ".build", "next");
+    await fs.mkdir(path.join(actual, "standalone"), { recursive: true });
+    await fs.writeFile(path.join(actual, "BUILD_ID"), "hostinger-build");
+
+    const result = await publishDefaultNextOutputAlias(tempDir, actual);
+    assert.equal(result.action, "linked");
+
+    const alias = path.join(tempDir, ".next");
+    const stat = await fs.lstat(alias);
+    assert.equal(stat.isSymbolicLink() || stat.isDirectory(), true);
+    assert.equal(await fs.readFile(path.join(alias, "BUILD_ID"), "utf8"), "hostinger-build");
+  });
+});
+
+test("publishDefaultNextOutputAlias is a no-op when distDir is already .next", async () => {
+  await withTempDir(async (tempDir) => {
+    const actual = path.join(tempDir, ".next");
+    await fs.mkdir(actual, { recursive: true });
+    const result = await publishDefaultNextOutputAlias(tempDir, actual);
+    assert.equal(result.action, "already-default");
   });
 });

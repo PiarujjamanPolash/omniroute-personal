@@ -128,6 +128,48 @@ export function isTurbopackUnsupportedPlatformOutput(output) {
   return /Turbopack is not supported on this platform/i.test(String(output ?? ""));
 }
 
+/**
+ * Hostinger (and other Next.js hosts) look for `.next` after `npm run build`.
+ * OmniRoute writes to `.build/next` (see next.config.mjs distDir). Publish a
+ * directory alias so the platform's "output directory" check succeeds without
+ * changing the real distDir used by `npm start`.
+ */
+export async function publishDefaultNextOutputAlias(
+  rootDir,
+  actualDistDir,
+  { symlink = fs.symlink, lstat = fs.lstat, rm = fs.rm } = {}
+) {
+  const aliasPath = path.join(rootDir, ".next");
+  const actual = path.resolve(rootDir, actualDistDir);
+  if (path.resolve(aliasPath) === actual) {
+    return { action: "already-default" };
+  }
+
+  let existing = null;
+  try {
+    existing = await lstat(aliasPath);
+  } catch (err) {
+    if (err?.code !== "ENOENT") throw err;
+  }
+
+  if (existing && !existing.isSymbolicLink()) {
+    console.warn(
+      "[build-next-isolated] .next already exists as a real path; skipped Hostinger output alias"
+    );
+    return { action: "skipped-existing" };
+  }
+
+  if (existing?.isSymbolicLink()) {
+    await rm(aliasPath, { force: true });
+  }
+
+  const target = path.relative(rootDir, actual) || actual;
+  const type = process.platform === "win32" ? "junction" : "dir";
+  await symlink(target, aliasPath, type);
+  console.log(`[build-next-isolated] Linked .next -> ${target} (default Next.js output dir)`);
+  return { action: "linked", target };
+}
+
 function runNextBuild(bundlerFlag = resolveNextBuildBundlerFlag()) {
   return new Promise((resolve) => {
     const nextBin = path.join(projectRoot, "node_modules", "next", "dist", "bin", "next");
@@ -449,6 +491,16 @@ export async function main() {
       console.log(
         "[build-next-isolated] Vercel build: skipped standalone packaging (Next.js serverless output)"
       );
+    }
+    if (result.code === 0) {
+      try {
+        await publishDefaultNextOutputAlias(projectRoot, distDir);
+      } catch (aliasErr) {
+        console.warn(
+          "[build-next-isolated] Non-fatal error publishing .next output alias:",
+          aliasErr?.message
+        );
+      }
     }
     process.exitCode = result.code;
   } catch (error) {
