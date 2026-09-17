@@ -16,7 +16,7 @@ import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -72,6 +72,11 @@ const ENCRYPTION_BOUND_KEYS = new Set([]);
 function resolveDataDir(env = process.env) {
   const configured = env.DATA_DIR?.trim();
   if (configured) return resolve(configured);
+
+  const vercel = env.VERCEL?.trim().toLowerCase();
+  if (vercel === "1" || vercel === "true") {
+    return join(tmpdir(), "omniroute");
+  }
 
   if (process.platform === "win32") {
     const appData = env.APPDATA || join(homedir(), "AppData", "Roaming");

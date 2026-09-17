@@ -1,0 +1,9 @@
+.git
+electron
+tests
+docs/i18n
+coverage
+.omniroute
+.stryker-tmp
+playwright-report
+test-results

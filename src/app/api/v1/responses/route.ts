@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
 import { z } from "zod";
 import { handleChat } from "@/sse/handlers/chat";
 import { CORS_HEADERS } from "@/shared/utils/cors";

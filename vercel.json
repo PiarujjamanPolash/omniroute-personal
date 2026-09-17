@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "fluid": true,
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "env": {
+    "DATA_DIR": "/tmp/omniroute",
+    "OMNIROUTE_DISABLE_BACKGROUND_SERVICES": "1",
+    "OMNIROUTE_ENABLE_LIVE_WS": "0",
+    "OMNIROUTE_MITM_STUB": "1",
+    "OMNIROUTE_USE_TURBOPACK": "0"
+  },
+  "functions": {
+    "src/app/api/**/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}

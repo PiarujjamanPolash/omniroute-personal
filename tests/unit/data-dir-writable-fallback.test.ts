@@ -24,6 +24,7 @@ async function withTempEnv(fn: (paths: { root: string; home: string }) => void |
   delete process.env.DATA_DIR;
   delete process.env.XDG_CONFIG_HOME;
   delete process.env.APPDATA;
+  delete process.env.VERCEL;
   process.env.HOME = home;
   process.env.USERPROFILE = home;
 
@@ -121,5 +122,24 @@ test("resolveWritableDataDir leaves the cloud sentinel untouched", async () => {
     process.env.DATA_DIR = "/some/configured/path";
     const resolved = resolveWritableDataDir({ isCloud: true });
     assert.equal(resolved, "/tmp");
+  });
+});
+
+test("resolveDataDir uses /tmp/omniroute on Vercel when DATA_DIR is unset", async () => {
+  await withTempEnv(() => {
+    delete process.env.DATA_DIR;
+    process.env.VERCEL = "1";
+    process.env.OMNIROUTE_ALLOW_DEFAULT_DATA_DIR = "1";
+    assert.equal(resolveDataDir(), "/tmp/omniroute");
+    assert.equal(resolveWritableDataDir(), "/tmp/omniroute");
+  });
+});
+
+test("resolveDataDir still honors an explicit DATA_DIR on Vercel", async () => {
+  await withTempEnv(({ root }) => {
+    const configured = path.join(root, "vercel-data");
+    process.env.DATA_DIR = configured;
+    process.env.VERCEL = "1";
+    assert.equal(resolveDataDir(), path.resolve(configured));
   });
 });

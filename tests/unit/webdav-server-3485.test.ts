@@ -772,8 +772,10 @@ test("resolveDataDir: parity with src/lib/dataPaths.ts across env combos", async
 
   const ORIG_DATA = process.env.DATA_DIR;
   const ORIG_XDG = process.env.XDG_CONFIG_HOME;
+  const ORIG_VERCEL = process.env.VERCEL;
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ddir-"));
   try {
+    delete process.env.VERCEL;
     const combos: Array<Record<string, string | undefined>> = [
       { DATA_DIR: tmp, XDG_CONFIG_HOME: undefined },
       { DATA_DIR: `  ${tmp}  `, XDG_CONFIG_HOME: undefined }, // trims + resolves
@@ -799,6 +801,8 @@ test("resolveDataDir: parity with src/lib/dataPaths.ts across env combos", async
     else process.env.DATA_DIR = ORIG_DATA;
     if (ORIG_XDG === undefined) delete process.env.XDG_CONFIG_HOME;
     else process.env.XDG_CONFIG_HOME = ORIG_XDG;
+    if (ORIG_VERCEL === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = ORIG_VERCEL;
     fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });

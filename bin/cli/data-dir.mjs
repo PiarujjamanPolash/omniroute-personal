@@ -51,6 +51,11 @@ export function resolveDataDir() {
   const configured = normalizeConfiguredPath(process.env.DATA_DIR);
   if (configured) return configured;
 
+  const vercel = process.env.VERCEL?.trim().toLowerCase();
+  if (vercel === "1" || vercel === "true") {
+    return path.join(os.tmpdir(), APP_NAME);
+  }
+
   return getDefaultDataDir();
 }
 

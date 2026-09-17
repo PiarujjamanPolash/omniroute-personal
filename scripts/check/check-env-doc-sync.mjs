@@ -158,6 +158,14 @@ const IGNORE_FROM_CODE = new Set([
   "REPL_SLUG",
   "WSL_DISTRO_NAME",
   "WSL_INTEROP",
+  // Vercel platform injection — not OmniRoute product config. Read to detect
+  // serverless runtime (src/lib/serverlessRuntime.ts) and pick /tmp storage.
+  "VERCEL",
+  "VERCEL_ENV",
+  "VERCEL_URL",
+  "VERCEL_REGION",
+  "VERCEL_PROJECT_PRODUCTION_URL",
+  "VERCEL_GIT_COMMIT_SHA",
   // X11/Wayland display server vars used by tray heuristic (isTraySupported).
   "DISPLAY",
   "WAYLAND_DISPLAY",

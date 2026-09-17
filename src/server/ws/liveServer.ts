@@ -32,6 +32,7 @@ import type { DashboardEventName, DashboardEventMap, DashboardChannel } from "@/
 
 import { CHANNEL_EVENTS, getChannelForEvent } from "@/lib/events/types";
 import { isAutomatedTestProcess, isBuildProcess } from "@/shared/utils/testProcess";
+import { isVercelRuntime } from "@/lib/serverlessRuntime";
 import { warnIfNonLoopbackWithoutApiKey } from "@/lib/startup/nonLoopbackApiKeyGuard";
 
 import {
@@ -638,7 +639,7 @@ function isBuildOrTest(): boolean {
 
 export function isLiveWsEnabled(): boolean {
   const v = process.env.OMNIROUTE_ENABLE_LIVE_WS;
-  if (v === undefined) return true; // default ON (loopback-bound)
+  if (v === undefined) return !isVercelRuntime(); // default ON except serverless
   return v === "1" || v.toLowerCase() === "true";
 }
 

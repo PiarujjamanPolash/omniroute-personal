@@ -7,9 +7,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const { shouldStubMitmManager, mitmManagerAliasFor } = await import(
-  "../../scripts/build/mitm-stub-flag.mjs"
-);
+const { shouldStubMitmManager, mitmManagerAliasFor } =
+  await import("../../scripts/build/mitm-stub-flag.mjs");
 
 describe("mitm manager stub alias (#6344)", () => {
   it("default env does NOT stub the manager (npm/Electron/VPS builds get the real module)", () => {
@@ -17,9 +16,9 @@ describe("mitm manager stub alias (#6344)", () => {
     assert.deepEqual(mitmManagerAliasFor({}), {});
   });
 
-  it("OMNIROUTE_MITM_STUB=1 opts into the stub (Docker graceful degradation, #3390)", () => {
-    assert.equal(shouldStubMitmManager({ OMNIROUTE_MITM_STUB: "1" }), true);
-    assert.deepEqual(mitmManagerAliasFor({ OMNIROUTE_MITM_STUB: "1" }), {
+  it("VERCEL=1 stubs the manager (serverless cannot run MITM)", () => {
+    assert.equal(shouldStubMitmManager({ VERCEL: "1" }), true);
+    assert.deepEqual(mitmManagerAliasFor({ VERCEL: "true" }), {
       "@/mitm/manager": "./src/mitm/manager.stub.ts",
     });
   });

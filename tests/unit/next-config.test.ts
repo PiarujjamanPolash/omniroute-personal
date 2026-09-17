@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 
 const modulePath = path.join(process.cwd(), "next.config.mjs");
 const originalNextDistDir = process.env.NEXT_DIST_DIR;
+const originalVercel = process.env.VERCEL;
 
 async function loadNextConfig(label) {
   return import(`${pathToFileURL(modulePath).href}?case=${label}-${Date.now()}`);
@@ -16,10 +17,16 @@ test.afterEach(() => {
   } else {
     process.env.NEXT_DIST_DIR = originalNextDistDir;
   }
+  if (originalVercel === undefined) {
+    delete process.env.VERCEL;
+  } else {
+    process.env.VERCEL = originalVercel;
+  }
 });
 
 test("next config exposes standalone build settings and canonical rewrites", async () => {
   process.env.NEXT_DIST_DIR = ".next-task607";
+  delete process.env.VERCEL;
   const { default: nextConfig } = await loadNextConfig("distdir");
 
   const rewrites = await nextConfig.rewrites();
@@ -72,6 +79,23 @@ test("next config exposes standalone build settings and canonical rewrites", asy
       destination: "/api/v1/models",
     },
   ]);
+});
+
+test("Vercel builds skip standalone output and use the .next distDir", async () => {
+  const originalVercel = process.env.VERCEL;
+  const originalDistDir = process.env.NEXT_DIST_DIR;
+  try {
+    delete process.env.NEXT_DIST_DIR;
+    process.env.VERCEL = "1";
+    const { default: nextConfig } = await loadNextConfig("vercel-distdir");
+    assert.equal(nextConfig.output, undefined);
+    assert.equal(nextConfig.distDir, ".next");
+  } finally {
+    if (originalVercel === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = originalVercel;
+    if (originalDistDir === undefined) delete process.env.NEXT_DIST_DIR;
+    else process.env.NEXT_DIST_DIR = originalDistDir;
+  }
 });
 
 test("next config declares Turbopack aliases, runtime assets and server externals", async () => {
@@ -164,8 +188,10 @@ test("Turbopack aliases better-sqlite3 to the stub ONLY when OMNIROUTE_BETTER_SQ
 
 test("Turbopack aliases @/mitm/manager to the stub ONLY when OMNIROUTE_MITM_STUB=1 (#6344)", async () => {
   const original = process.env.OMNIROUTE_MITM_STUB;
+  const originalVercel = process.env.VERCEL;
   try {
     delete process.env.OMNIROUTE_MITM_STUB;
+    delete process.env.VERCEL;
     const { default: def } = await loadNextConfig("mitm-default");
     assert.equal(def.turbopack.resolveAlias["@/mitm/manager"], undefined);
 
@@ -175,6 +201,24 @@ test("Turbopack aliases @/mitm/manager to the stub ONLY when OMNIROUTE_MITM_STUB
   } finally {
     if (original === undefined) delete process.env.OMNIROUTE_MITM_STUB;
     else process.env.OMNIROUTE_MITM_STUB = original;
+    if (originalVercel === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = originalVercel;
+  }
+});
+
+test("Turbopack aliases @/mitm/manager to the stub on Vercel builds", async () => {
+  const original = process.env.OMNIROUTE_MITM_STUB;
+  const originalVercel = process.env.VERCEL;
+  try {
+    delete process.env.OMNIROUTE_MITM_STUB;
+    process.env.VERCEL = "1";
+    const { default: vercel } = await loadNextConfig("mitm-vercel");
+    assert.equal(vercel.turbopack.resolveAlias["@/mitm/manager"], "./src/mitm/manager.stub.ts");
+  } finally {
+    if (original === undefined) delete process.env.OMNIROUTE_MITM_STUB;
+    else process.env.OMNIROUTE_MITM_STUB = original;
+    if (originalVercel === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = originalVercel;
   }
 });
 

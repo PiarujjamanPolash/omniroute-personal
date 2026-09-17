@@ -1277,6 +1277,19 @@ ENABLE_TLS_FINGERPRINT=true
 CLI_COMPAT_ALL=1
 ```
 
+### Vercel (ephemeral preview)
+
+SQLite lives under `/tmp` and is wiped on instance recycle. Pin secrets in the Vercel dashboard — see [Vercel Guide](../guides/VERCEL.md). `vercel.json` already sets `DATA_DIR`, disables background services and the live WebSocket, and stubs MITM.
+
+```bash
+JWT_SECRET=<generated>
+API_KEY_SECRET=<generated>
+INITIAL_PASSWORD=<generated>
+NEXT_PUBLIC_BASE_URL=https://your-project.vercel.app
+AUTH_COOKIE_SECURE=true
+REQUIRE_API_KEY=true
+```
+
 ---
 
 ## 24. Skills Sandbox (v3.8.0+)

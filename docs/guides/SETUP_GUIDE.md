@@ -64,6 +64,10 @@ PORT=20128 DASHBOARD_PORT=20129 NEXT_PUBLIC_BASE_URL=http://localhost:20129 npm 
 
 See the [Docker Guide](./DOCKER_GUIDE.md) for complete Docker setup including Compose profiles and Caddy HTTPS.
 
+### Vercel
+
+See the [Vercel Guide](./VERCEL.md). This hosts the dashboard and `/v1` API as Next.js functions with **ephemeral** `/tmp` SQLite — fine for a preview, not a durable gateway.
+
 ### Desktop App (Electron)
 
 OmniRoute ships a desktop wrapper built on Electron 41 + electron-builder 26.10. Available scripts (workspace root):

@@ -1,6 +1,7 @@
 import path from "path";
 import os from "os";
 import fs from "fs";
+import { getVercelDataDir, isVercelRuntime } from "./serverlessRuntime";
 
 export const APP_NAME = "omniroute";
 
@@ -66,6 +67,9 @@ export function resolveDataDir({ isCloud = false }: { isCloud?: boolean } = {}):
 
   const configured = normalizeConfiguredPath(process.env.DATA_DIR);
   if (configured) return configured;
+
+  // Vercel Functions only have a writable ephemeral disk at /tmp.
+  if (isVercelRuntime()) return getVercelDataDir();
 
   return getDefaultDataDir();
 }

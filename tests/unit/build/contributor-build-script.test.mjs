@@ -53,8 +53,9 @@ test("contributor instrumentation stubs are reversible", async () => {
 
 test("contributor profile disables standalone output while default keeps it", () => {
   assert.match(nextConfigSource, /isContributorBuild/);
+  assert.match(nextConfigSource, /isVercelBuild/);
   assert.match(
     nextConfigSource,
-    /\.\.\.\(isContributorBuild \? \{\} : \{ output: "standalone" \}\)/
+    /\.\.\.\(isContributorBuild \|\| isVercelBuild \? \{\} : \{ output: "standalone" \}\)/
   );
 });

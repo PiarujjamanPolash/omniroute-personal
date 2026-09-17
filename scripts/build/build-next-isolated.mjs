@@ -381,6 +381,10 @@ export async function main() {
       console.log(
         "[build-next-isolated] Contributor profile: skipped standalone packaging (compile-only validation)"
       );
+    } else if (result.code === 0 && (process.env.VERCEL === "1" || process.env.VERCEL === "true")) {
+      console.log(
+        "[build-next-isolated] Vercel build: skipped standalone packaging (Next.js serverless output)"
+      );
     }
     process.exitCode = result.code;
   } catch (error) {

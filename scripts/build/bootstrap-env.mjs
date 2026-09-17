@@ -21,7 +21,7 @@
 import { randomBytes, createDecipheriv, scryptSync, createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
@@ -38,6 +38,11 @@ function resolveDataDir(overridePath, env = process.env) {
 
   const configured = env.DATA_DIR?.trim();
   if (configured) return resolve(configured);
+
+  const vercel = env.VERCEL?.trim().toLowerCase();
+  if (vercel === "1" || vercel === "true") {
+    return join(tmpdir(), "omniroute");
+  }
 
   if (process.platform === "win32") {
     const appData = env.APPDATA || join(homedir(), "AppData", "Roaming");

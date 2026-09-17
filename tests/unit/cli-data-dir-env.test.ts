@@ -25,7 +25,9 @@ async function withTempEnv(
   delete process.env.DATA_DIR;
   delete process.env.XDG_CONFIG_HOME;
   delete process.env.APPDATA;
+  delete process.env.VERCEL;
   process.env.HOME = home;
+  process.env.USERPROFILE = home;
   process.chdir(cwd);
 
   try {

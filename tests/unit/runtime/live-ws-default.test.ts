@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 // Either condition is sufficient — no socket is opened.
 
 const originalEnv = process.env.OMNIROUTE_ENABLE_LIVE_WS;
+const originalVercel = process.env.VERCEL;
 
 after(() => {
   // Restore original env so other tests in the same process are unaffected.
@@ -15,6 +16,11 @@ after(() => {
     delete process.env.OMNIROUTE_ENABLE_LIVE_WS;
   } else {
     process.env.OMNIROUTE_ENABLE_LIVE_WS = originalEnv;
+  }
+  if (originalVercel === undefined) {
+    delete process.env.VERCEL;
+  } else {
+    process.env.VERCEL = originalVercel;
   }
 });
 
@@ -24,7 +30,15 @@ const { isLiveWsEnabled } = await import("../../../src/server/ws/liveServer.ts")
 describe("isLiveWsEnabled — default-ON behavior", () => {
   test("unset → true (default ON)", () => {
     delete process.env.OMNIROUTE_ENABLE_LIVE_WS;
+    delete process.env.VERCEL;
     assert.equal(isLiveWsEnabled(), true);
+  });
+
+  test("unset on Vercel → false (no extra listen port)", () => {
+    delete process.env.OMNIROUTE_ENABLE_LIVE_WS;
+    process.env.VERCEL = "1";
+    assert.equal(isLiveWsEnabled(), false);
+    delete process.env.VERCEL;
   });
 
   test('"0" → false', () => {

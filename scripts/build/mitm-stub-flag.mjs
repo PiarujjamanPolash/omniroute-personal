@@ -10,11 +10,12 @@
  * "MITM manager stub reached at runtime" for all non-Docker users.
  *
  * The stub is only correct where the runtime genuinely cannot run the MITM
- * stack (containers without host access — #3390 graceful degradation), so it
- * is now opt-in via OMNIROUTE_MITM_STUB=1, set by the Dockerfile.
+ * stack (containers without host access — #3390 graceful degradation; Vercel
+ * Functions), so it is opt-in via OMNIROUTE_MITM_STUB=1 (Dockerfile) or VERCEL=1.
  */
 export function shouldStubMitmManager(env = process.env) {
-  return env.OMNIROUTE_MITM_STUB === "1";
+  const vercel = env.VERCEL?.trim().toLowerCase();
+  return env.OMNIROUTE_MITM_STUB === "1" || vercel === "1" || vercel === "true";
 }
 
 /** Turbopack resolveAlias fragment for @/mitm/manager, derived from the env. */

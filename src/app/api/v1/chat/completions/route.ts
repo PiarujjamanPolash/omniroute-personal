@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
 import { z } from "zod";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
 import { callCloudWithMachineId } from "@/shared/utils/cloud";
