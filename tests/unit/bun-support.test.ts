@@ -96,12 +96,12 @@ test("createSyncDriverFactory prefers better-sqlite3 when running under Node", (
   }
 });
 
-// `OMNIROUTE_USE_TURBOPACK` is the operator's only control over the bundler:
+// `OMNIROUTE_USE_TURBOPACK` is the operator's control over the bundler vs Bun:
 // Turbopack is the default and `0` is the documented escape hatch (webpack), taken
 // for Windows / native-binding trouble / RAM-constrained machines — see
-// docs/reference/ENVIRONMENT.md and #6409. Nothing sniffs the runtime, so pin that:
-// a hidden override would silently ignore an explicit `=1` from an operator who set
-// it on purpose (CI does, in build.yml / ci.yml / quality.yml).
+// docs/reference/ENVIRONMENT.md and #6409. Bun itself is not sniffed. Old glibc
+// (Hostinger) is an OS-level exception: tests below pin a modern glibc so this
+// contract stays about the env flag, not the host libc.
 test("resolveNextBuildBundlerFlag is decided by OMNIROUTE_USE_TURBOPACK alone, not by the runtime", async () => {
   const buildIsolated = await import("../../scripts/build/build-next-isolated.mjs");
   const originalBun = process.versions.bun;
@@ -113,14 +113,24 @@ test("resolveNextBuildBundlerFlag is decided by OMNIROUTE_USE_TURBOPACK alone, n
         (process.versions as Record<string, string>).bun = bun;
       }
       const where = `bun=${bun ?? "absent"}`;
-      assert.equal(buildIsolated.resolveNextBuildBundlerFlag({}), "--turbopack", where);
       assert.equal(
-        buildIsolated.resolveNextBuildBundlerFlag({ OMNIROUTE_USE_TURBOPACK: "1" }),
+        buildIsolated.resolveNextBuildBundlerFlag({}, { glibcVersionRuntime: "2.39" }),
         "--turbopack",
         where
       );
       assert.equal(
-        buildIsolated.resolveNextBuildBundlerFlag({ OMNIROUTE_USE_TURBOPACK: "0" }),
+        buildIsolated.resolveNextBuildBundlerFlag(
+          { OMNIROUTE_USE_TURBOPACK: "1" },
+          { glibcVersionRuntime: "2.39" }
+        ),
+        "--turbopack",
+        where
+      );
+      assert.equal(
+        buildIsolated.resolveNextBuildBundlerFlag(
+          { OMNIROUTE_USE_TURBOPACK: "0" },
+          { glibcVersionRuntime: "2.39" }
+        ),
         "--webpack",
         where
       );

@@ -68,6 +68,10 @@ See the [Docker Guide](./DOCKER_GUIDE.md) for complete Docker setup including Co
 
 See the [Vercel Guide](./VERCEL.md). This hosts the dashboard and `/v1` API as Next.js functions with **ephemeral** `/tmp` SQLite — fine for a preview, not a durable gateway.
 
+### Hostinger
+
+See the [Hostinger Guide](./HOSTINGER.md). Shared Node.js hosting often has GLIBC older than 2.29, so production builds use webpack instead of Turbopack. Use Node 22.22+ or 24, start command `npm start`, and pin secrets plus a durable `DATA_DIR`.
+
 ### Desktop App (Electron)
 
 OmniRoute ships a desktop wrapper built on Electron 41 + electron-builder 26.10. Available scripts (workspace root):

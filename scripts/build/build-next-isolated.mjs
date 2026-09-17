@@ -93,7 +93,42 @@ export function ensureWindowsBuildProfileDirs(env, mkdirImpl = mkdirSync) {
   mkdirImpl(env.LOCALAPPDATA, { recursive: true });
 }
 
-function runNextBuild() {
+/** Next.js linux-x64 SWC (`@next/swc-linux-x64-gnu`) requires GLIBC 2.29+. */
+const NEXT_SWC_MIN_GLIBC = { major: 2, minor: 29 };
+
+export function parseGlibcVersion(version) {
+  if (typeof version !== "string" || !version.trim()) return null;
+  const [major, minor] = version.split(".").map((part) => Number.parseInt(part, 10));
+  if (!Number.isFinite(major) || !Number.isFinite(minor)) return null;
+  return { major, minor };
+}
+
+/**
+ * True when the host glibc is older than Next's native SWC binary.
+ * Shared hosts (Hostinger CloudLinux / older CentOS) often ship GLIBC 2.17
+ * and then fail with: `version 'GLIBC_2.29' not found` → WASM SWC only →
+ * "Turbopack is not supported on this platform".
+ */
+export function isGlibcTooOldForNextSwc(version, min = NEXT_SWC_MIN_GLIBC) {
+  const parsed = parseGlibcVersion(version);
+  if (!parsed) return false;
+  return parsed.major < min.major || (parsed.major === min.major && parsed.minor < min.minor);
+}
+
+export function readGlibcVersionRuntime() {
+  try {
+    const version = process.report?.getReport?.()?.header?.glibcVersionRuntime;
+    return typeof version === "string" ? version : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function isTurbopackUnsupportedPlatformOutput(output) {
+  return /Turbopack is not supported on this platform/i.test(String(output ?? ""));
+}
+
+function runNextBuild(bundlerFlag = resolveNextBuildBundlerFlag()) {
   return new Promise((resolve) => {
     const nextBin = path.join(projectRoot, "node_modules", "next", "dist", "bin", "next");
     const buildEnv = resolveNextBuildEnv(process.env);
@@ -104,14 +139,23 @@ function runNextBuild() {
           path.join(projectRoot, "open-sse", "utils", "setupPolyfill.ts"),
           nextBin,
           "build",
-          resolveNextBuildBundlerFlag(),
+          bundlerFlag,
         ]
-      : [nextBin, "build", resolveNextBuildBundlerFlag()];
+      : [nextBin, "build", bundlerFlag];
     const child = spawn(process.execPath, nextArgs, {
       cwd: projectRoot,
-      stdio: "inherit",
+      stdio: ["inherit", "pipe", "pipe"],
       env: buildEnv,
     });
+
+    let output = "";
+    const tee = (chunk, stream) => {
+      const text = chunk.toString();
+      output += text;
+      stream.write(chunk);
+    };
+    child.stdout?.on("data", (chunk) => tee(chunk, process.stdout));
+    child.stderr?.on("data", (chunk) => tee(chunk, process.stderr));
 
     const forward = (signal) => {
       if (!child.killed) child.kill(signal);
@@ -124,21 +168,31 @@ function runNextBuild() {
       process.off("SIGINT", forward);
       process.off("SIGTERM", forward);
       if (signal) {
-        resolve({ code: 1, signal });
+        resolve({ code: 1, signal, output, bundlerFlag });
         return;
       }
-      resolve({ code: code ?? 1, signal: null });
+      resolve({ code: code ?? 1, signal: null, output, bundlerFlag });
     });
   });
 }
 
-export function resolveNextBuildBundlerFlag(baseEnv = process.env) {
+export function resolveNextBuildBundlerFlag(
+  baseEnv = process.env,
+  { glibcVersionRuntime = readGlibcVersionRuntime() } = {}
+) {
   // Turbopack is the default; OMNIROUTE_USE_TURBOPACK=0 is the documented escape hatch
   // to webpack (Windows, native-binding trouble, RAM-constrained machines — #6409, and
-  // docs/reference/ENVIRONMENT.md). The choice is env-only ON PURPOSE: the variable is
-  // the operator's control and CI sets it explicitly, so sniffing the runtime here would
-  // silently override an operator who asked for Turbopack.
+  // docs/reference/ENVIRONMENT.md).
   if (baseEnv.OMNIROUTE_USE_TURBOPACK === "0") {
+    return "--webpack";
+  }
+  // Hosts that cannot load native SWC (GLIBC < 2.29) cannot run Turbopack at all —
+  // Next falls back to WASM SWC and then throws. Prefer webpack up front, even when
+  // .env.example copied OMNIROUTE_USE_TURBOPACK=1 onto a shared host.
+  if (isGlibcTooOldForNextSwc(glibcVersionRuntime)) {
+    console.warn(
+      `[build-next-isolated] glibc ${glibcVersionRuntime} is older than ${NEXT_SWC_MIN_GLIBC.major}.${NEXT_SWC_MIN_GLIBC.minor}; using webpack (Turbopack needs native SWC)`
+    );
     return "--webpack";
   }
   return "--turbopack";
@@ -308,7 +362,17 @@ export async function main() {
 
     await resetStandaloneOutput(projectRoot);
 
-    const result = await runNextBuild();
+    let result = await runNextBuild();
+    if (
+      result.code !== 0 &&
+      result.bundlerFlag === "--turbopack" &&
+      isTurbopackUnsupportedPlatformOutput(result.output)
+    ) {
+      console.warn(
+        "[build-next-isolated] Turbopack native bindings unavailable; retrying with webpack"
+      );
+      result = await runNextBuild("--webpack");
+    }
     const standaloneDir = path.join(distDir, "standalone");
     if (result.code === 0 && (await exists(standaloneDir)) && !isContributorBuild()) {
       try {

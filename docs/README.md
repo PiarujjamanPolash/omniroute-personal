@@ -37,6 +37,7 @@ Simple guides for using OmniRoute — no technical background needed.
 - [FREE_PROVIDER_RANKINGS.md](guides/FREE_PROVIDER_RANKINGS.md) — free provider rankings (Arena ELO).
 - [DOCKER_GUIDE.md](guides/DOCKER_GUIDE.md) — running OmniRoute under Docker, including runtime RAM for coding agents.
 - [VERCEL.md](guides/VERCEL.md) — deploying OmniRoute to Vercel (ephemeral SQLite preview).
+- [HOSTINGER.md](guides/HOSTINGER.md) — deploying OmniRoute on Hostinger Node.js (webpack on old glibc).
 - [ELECTRON_GUIDE.md](guides/ELECTRON_GUIDE.md) — desktop (Electron) builds.
 - [TERMUX_GUIDE.md](guides/TERMUX_GUIDE.md) — running on Android via Termux.
 - [PWA_GUIDE.md](guides/PWA_GUIDE.md) — installing the dashboard as a PWA.
